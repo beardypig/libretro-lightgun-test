@@ -150,33 +150,39 @@ void get_lightgun_position(unsigned port, int &x, int &y, int16_t &offscreen, in
 
 void draw_crosshair(int x, int y, u_int16_t color) {
   for (int i = 3; i < 10; i++) {
-    if ((x + i) < FRAME_WIDTH) {
-      video_buffer[(y * FRAME_WIDTH) + (x + i)] = color;
-    }
-    if ((x - i) >= 0) {
-      video_buffer[(y * FRAME_WIDTH) + (x - i)] = color;
+    if (y >=0 && y < FRAME_HEIGHT) {
+      if ((x + i) < FRAME_WIDTH) {
+        video_buffer[(y * FRAME_WIDTH) + (x + i)] = color;
+      }
+      if ((x - i) >= 0) {
+        video_buffer[(y * FRAME_WIDTH) + (x - i)] = color;
+      }
     }
 
-    if ((y + i) < FRAME_HEIGHT) {
-      video_buffer[((y + i) * FRAME_WIDTH) + x] = color;
-    }
-    if ((y - i) >= 0) {
-      video_buffer[((y - i) * FRAME_WIDTH) + x] = color;
+    if (x >= 0 && x < FRAME_WIDTH) {
+      if ((y + i) < FRAME_HEIGHT) {
+        video_buffer[((y + i) * FRAME_WIDTH) + x] = color;
+      }
+      if ((y - i) >= 0) {
+        video_buffer[((y - i) * FRAME_WIDTH) + x] = color;
+      }
     }
   }
 }
 
 // Run a single frame of emulation
 void retro_run(void) {
-  int x, y;
+  int _x, _y, x, y;
   int16_t offscreen, offscreen_shot, trigger;
 
   for (int i = 0; i < FRAME_HEIGHT * FRAME_WIDTH; i++)
     video_buffer[i] = BACKGROUND_COLOR;
 
-  get_lightgun_position(0, x, y, offscreen, offscreen_shot, trigger);
+  get_lightgun_position(0, _x, _y, offscreen, offscreen_shot, trigger);
 
   if (!offscreen) {
+    x = static_cast<int>(((_x + 0x7FFF) * FRAME_WIDTH) / (0x7FFF * 2));
+    y = static_cast<int>(((_y + 0x7FFF) * FRAME_HEIGHT) / (0x7FFF * 2));
     draw_crosshair(x, y, FOREGROUND_COLOR);
   }
 
