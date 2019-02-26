@@ -22,7 +22,6 @@
 #include <cstring>
 #include <memory>
 #include <cmath>
-#include <array>
 
 #include "libretro.h"
 
@@ -35,15 +34,9 @@ static retro_environment_t environ_cb;
 static retro_audio_sample_t audio_cb;
 static retro_audio_sample_batch_t audio_batch_cb;
 
-unsigned long machine_frequency;
-unsigned long tone_frequency;
-size_t sin_offset;
-double sin_value = 0.0;
-
-static const size_t FRAME_SCALE_FACTOR = 10;
 static const size_t FRAME_WIDTH = 320;
 static const size_t FRAME_HEIGHT = 240;
-std::array<uint16_t, FRAME_WIDTH * FRAME_HEIGHT> video_buffer;
+uint16_t video_buffer[FRAME_WIDTH * FRAME_HEIGHT];
 static const uint16_t FOREGROUND_COLOR = 0x07ff;
 static const uint16_t BACKGROUND_COLOR = 0x528a;
 
@@ -178,7 +171,8 @@ void retro_run(void) {
   int x, y;
   int16_t offscreen, offscreen_shot, trigger;
 
-  video_buffer.fill(BACKGROUND_COLOR);
+  for (int i = 0; i < FRAME_HEIGHT * FRAME_WIDTH; i++)
+    video_buffer[i] = BACKGROUND_COLOR;
 
   get_lightgun_position(0, x, y, offscreen, offscreen_shot, trigger);
 
@@ -186,5 +180,5 @@ void retro_run(void) {
     draw_crosshair(x, y, FOREGROUND_COLOR);
   }
 
-  video_cb(video_buffer.data(), FRAME_WIDTH, FRAME_HEIGHT, sizeof(uint16_t) * FRAME_WIDTH);
+  video_cb(video_buffer, FRAME_WIDTH, FRAME_HEIGHT, sizeof(uint16_t) * FRAME_WIDTH);
 }
