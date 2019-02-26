@@ -155,13 +155,21 @@ void get_lightgun_position(unsigned port, int &x, int &y, int16_t &offscreen, in
 }
 
 
-void draw_crosshair(int x, int y) {
-  for (int i = 1; i < 4; i++) {
-    video_buffer[(y * FRAME_WIDTH) + (x + i)] = FOREGROUND_COLOR;
-    video_buffer[(y * FRAME_WIDTH) + (x - i)] = FOREGROUND_COLOR;
+void draw_crosshair(int x, int y, u_int16_t color) {
+  for (int i = 3; i < 10; i++) {
+    if ((x + i) < FRAME_WIDTH) {
+      video_buffer[(y * FRAME_WIDTH) + (x + i)] = color;
+    }
+    if ((x - i) >= 0) {
+      video_buffer[(y * FRAME_WIDTH) + (x - i)] = color;
+    }
 
-    video_buffer[((y - i) * FRAME_WIDTH) + x] = FOREGROUND_COLOR;
-    video_buffer[((y - i) * FRAME_WIDTH) + x] = FOREGROUND_COLOR;
+    if ((y + i) < FRAME_HEIGHT) {
+      video_buffer[((y + i) * FRAME_WIDTH) + x] = color;
+    }
+    if ((y - i) >= 0) {
+      video_buffer[((y - i) * FRAME_WIDTH) + x] = color;
+    }
   }
 }
 
@@ -175,7 +183,7 @@ void retro_run(void) {
   get_lightgun_position(0, x, y, offscreen, offscreen_shot, trigger);
 
   if (!offscreen) {
-    draw_crosshair(x, y);
+    draw_crosshair(x, y, FOREGROUND_COLOR);
   }
 
   video_cb(video_buffer.data(), FRAME_WIDTH, FRAME_HEIGHT, sizeof(uint16_t) * FRAME_WIDTH);
