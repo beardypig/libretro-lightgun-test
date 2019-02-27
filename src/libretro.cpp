@@ -22,8 +22,15 @@
 #include <cstring>
 #include <memory>
 #include <cmath>
+#include <string>
 
 #include "libretro.h"
+
+extern u_int8_t font8x8_basic[128][8];
+
+static const unsigned int PIXEL_WIDTH = 8;
+static const unsigned int PIXEL_HEIGHT = 8;
+static const unsigned int PIXEL_SPACING = 1;
 
 // Callbacks
 static retro_log_printf_t log_cb;
@@ -36,9 +43,9 @@ static retro_audio_sample_batch_t audio_batch_cb;
 
 static const size_t FRAME_WIDTH = 320;
 static const size_t FRAME_HEIGHT = 240;
-uint16_t video_buffer[FRAME_WIDTH * FRAME_HEIGHT];
-static const uint16_t FOREGROUND_COLOR = 0x07ff;
-static const uint16_t BACKGROUND_COLOR = 0x528a;
+u_int16_t video_buffer[FRAME_WIDTH * FRAME_HEIGHT];
+static const u_int16_t FOREGROUND_COLOR = 0x07ff;
+static const u_int16_t BACKGROUND_COLOR = 0x528a;
 
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 
@@ -148,25 +155,50 @@ void get_lightgun_position(unsigned port, int &x, int &y, int16_t &offscreen, in
 }
 
 
-void draw_crosshair(int x, int y, u_int16_t color) {
-  for (int i = 3; i < 10; i++) {
-    if (y >=0 && y < FRAME_HEIGHT) {
-      if ((x + i) < FRAME_WIDTH) {
-        video_buffer[(y * FRAME_WIDTH) + (x + i)] = color;
-      }
-      if ((x - i) >= 0) {
-        video_buffer[(y * FRAME_WIDTH) + (x - i)] = color;
-      }
-    }
+void draw_pixel(int x, int y, u_int16_t color) {
+  if (y >=0 && y < FRAME_HEIGHT && x > 0 && x < FRAME_WIDTH) {
+    video_buffer[(y * FRAME_WIDTH) + x] = color;
+  }
+}
 
-    if (x >= 0 && x < FRAME_WIDTH) {
-      if ((y + i) < FRAME_HEIGHT) {
-        video_buffer[((y + i) * FRAME_WIDTH) + x] = color;
-      }
-      if ((y - i) >= 0) {
-        video_buffer[((y - i) * FRAME_WIDTH) + x] = color;
+void draw_line(int x0, int y0, int x1, int y1, u_int16_t color) {
+
+  int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+  int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1;
+  int err = (dx>dy ? dx : -dy)/2, e2;
+
+  for(;;){
+    draw_pixel(x0, y0, color);
+    if (x0==x1 && y0==y1) break;
+    e2 = err;
+    if (e2 >-dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+  }
+}
+
+void draw_crosshair(int x, int y, u_int16_t color) {
+  draw_line(x - 4, y - 4, x - 1, y - 1, color);
+  draw_line(x + 4, y - 4, x + 1, y - 1, color);
+
+  draw_line(x - 4, y + 4, x - 1, y + 1, color);
+  draw_line(x + 4, y + 4, x + 1, y + 1, color);
+}
+
+void draw_text(int x, int y, u_int16_t color, const std::string &message) {
+  char m;
+  u_int8_t fchar;
+  for(std::string::size_type i = 0; i < message.size(); ++i) {
+    m = message[i];
+    // each character is 8 x 8 pixels
+    for (int y_pixel = 0; y_pixel < PIXEL_HEIGHT; y_pixel++) {
+      for (u_int8_t x_pixel = 0; x_pixel < PIXEL_WIDTH; x_pixel++) {
+        fchar = font8x8_basic[m & 0x7fu][y_pixel];
+        if (fchar & (1u << x_pixel)) {  // draw the pixel or not
+          draw_pixel(x + x_pixel, y + y_pixel, color);
+        }
       }
     }
+    x += PIXEL_WIDTH + PIXEL_SPACING;
   }
 }
 
@@ -184,7 +216,9 @@ void retro_run(void) {
     x = static_cast<int>(((_x + 0x7FFF) * FRAME_WIDTH) / (0x7FFF * 2));
     y = static_cast<int>(((_y + 0x7FFF) * FRAME_HEIGHT) / (0x7FFF * 2));
     draw_crosshair(x, y, FOREGROUND_COLOR);
+  } else {
+    draw_text(30, 30, FOREGROUND_COLOR, "OFFSCREEN");
   }
 
-  video_cb(video_buffer, FRAME_WIDTH, FRAME_HEIGHT, sizeof(uint16_t) * FRAME_WIDTH);
+  video_cb(video_buffer, FRAME_WIDTH, FRAME_HEIGHT, sizeof(u_int16_t) * FRAME_WIDTH);
 }

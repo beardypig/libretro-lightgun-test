@@ -13,7 +13,7 @@ endif()
 
 set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/src/link.T")
 
-set(SOURCE_FILES src/libretro.cpp)
+set(SOURCE_FILES src/libretro.cpp src/sysfont.cpp)
 
 add_library(lightgun_test_libretro SHARED ${SOURCE_FILES})
 set_target_properties(lightgun_test_libretro PROPERTIES PREFIX "")  # remove lib prefix from target

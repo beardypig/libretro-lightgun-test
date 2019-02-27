@@ -36,5 +36,5 @@
 
 # CMake
 cmake-build-*/
-build/
+build*/
 *.ipynb
